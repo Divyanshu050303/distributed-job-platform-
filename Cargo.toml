@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "services/api-gateway",
+    "services/auth-service",
+    "services/job-service",
+    "services/worker-service",
+    "services/notification-service",
+
+    "shared/common",
+    "shared/config",
+    "shared/errors",
+]
+
+ 

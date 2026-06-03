@@ -1,0 +1,50 @@
+use sqlx::PgPool;
+
+use crate::{api::dto::user_request::CreateUserParams, domain::user::User};
+
+pub struct UserRepository;
+
+impl UserRepository {
+    pub async fn find_by_email(pool: &PgPool, email: &str) -> Result<Option<User>, sqlx::Error> {
+        sqlx::query_as::<_, User>(
+            r#"
+            SELECT *
+            FROM users
+            WHERE email = $1
+              AND deleted_at IS NULL
+            "#,
+        )
+        .bind(email)
+        .fetch_optional(pool)
+        .await
+    }
+
+    pub async fn create_user(pool: &PgPool, params: CreateUserParams) -> Result<User, sqlx::Error> {
+        sqlx::query_as::<_, User>(
+            r#"
+            INSERT INTO users (
+                email,
+                password_hash,
+                first_name,
+                last_name,
+                role_id
+            )
+            VALUES (
+                $1,
+                $2,
+                $3,
+                $4,
+                $5
+            )
+            RETURNING *
+            "#,
+        )
+        .bind(params.email)
+        .bind(params.password_hash)
+        .bind(params.first_name)
+        .bind(params.last_name)
+        .bind(params.role_id)
+        .fetch_one(pool)
+        .await
+    }
+}
