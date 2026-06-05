@@ -6,6 +6,7 @@ use crate::{
         user_request::CreateUserParams,
     },
     auth::password::PasswordService,
+    errors::app_error::AppError,
     repositories::{role_repository::RoleRepository, user_repository::UserRepository},
 };
 
@@ -15,31 +16,23 @@ impl AuthService {
     pub async fn register(
         pool: &PgPool,
         request: RegisterRequest,
-    ) -> Result<RegisterResponse, String> {
-        // 1. Check email exists
-
+    ) -> Result<RegisterResponse, AppError> {
         let existing_user = UserRepository::find_by_email(pool, &request.email)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|_| AppError::InternalServerError)?;
 
         if existing_user.is_some() {
-            return Err("Email already registered".to_string());
+            return Err(AppError::UserAlreadyExists);
         }
-
-        // 2. Get default role
 
         let role = RoleRepository::find_by_name(pool, "User")
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|_| AppError::InternalServerError)?;
 
-        let role = role.ok_or("Default role not found")?;
+        let role = role.ok_or(AppError::RoleNotFound)?;
 
-        // 3. Hash password
-
-        let password_hash =
-            PasswordService::hash_password(&request.password).map_err(|e| e.to_string())?;
-
-        // 4. Create user in DB
+        let password_hash = PasswordService::hash_password(&request.password)
+            .map_err(|_| AppError::InternalServerError)?;
 
         let user = UserRepository::create_user(
             pool,
@@ -52,19 +45,13 @@ impl AuthService {
             },
         )
         .await
-        .map_err(|e| e.to_string())?;
-
-        // 5. Return response
+        .map_err(|_| AppError::InternalServerError)?;
 
         Ok(RegisterResponse {
             id: user.id,
-
             email: user.email,
-
             first_name: user.first_name.unwrap_or_default(),
-
             last_name: user.last_name.unwrap_or_default(),
-
             is_verified: user.is_verified,
         })
     }

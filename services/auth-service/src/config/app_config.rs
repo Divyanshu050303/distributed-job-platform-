@@ -9,6 +9,11 @@ pub struct AppConfig {
     pub server_port: u16,
 
     pub database_url: String,
+    pub jwt_secret: String,
+
+    pub jwt_issuer: String,
+
+    pub jwt_access_token_expiry_minutes: i64,
 }
 
 impl AppConfig {
@@ -26,6 +31,14 @@ impl AppConfig {
                 .expect("Invalid SERVER_PORT"),
 
             database_url: env::var("DATABASE_URL").expect("DATABASE_URL missing"),
+            jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET missing"),
+
+            jwt_issuer: env::var("JWT_ISSUER").expect("JWT_ISSUER missing"),
+
+            jwt_access_token_expiry_minutes: env::var("JWT_ACCESS_TOKEN_EXPIRY_MINUTES")
+                .expect("JWT_ACCESS_TOKEN_EXPIRY_MINUTES missing")
+                .parse()
+                .unwrap(),
         }
     }
 }

@@ -4,6 +4,7 @@ use crate::{
     api::dto::{register_request::RegisterRequest, register_response::RegisterResponse},
     app_state::AppState,
     application::auth_service::AuthService,
+    errors::app_error::AppError,
 };
 
 #[utoipa::path(
@@ -22,7 +23,7 @@ use crate::{
 pub async fn register(
     State(state): State<AppState>,
     Json(request): Json<RegisterRequest>,
-) -> Result<Json<RegisterResponse>, String> {
+) -> Result<Json<RegisterResponse>, AppError> {
     let response = AuthService::register(&state.db, request).await?;
 
     Ok(Json(response))
