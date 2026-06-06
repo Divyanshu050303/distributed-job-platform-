@@ -2,22 +2,29 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    api::dto::{login_request::LoginRequest, login_response::LoginResponse},
-    auth::{jwt::JwtService, password::PasswordService, token_hash::TokenHashService},
-    config::app_config::AppConfig,
-};
-use crate::{
     api::dto::{
-        logout_all_request::LogoutAllRequest, logout_request::LogoutRequest,
-        refresh_token_request::RefreshTokenRequest, refresh_token_response::RefreshTokenResponse,
-        register_request::RegisterRequest, register_response::RegisterResponse,
+        forgot_password_request::ForgotPasswordRequest, logout_all_request::LogoutAllRequest,
+        logout_request::LogoutRequest, refresh_token_request::RefreshTokenRequest,
+        refresh_token_response::RefreshTokenResponse, register_request::RegisterRequest,
+        register_response::RegisterResponse, send_verification_request::SendVerificationRequest,
         session_response::SessionResponse, user_request::CreateUserParams,
+        verify_email_request::VerifyEmailRequest,
     },
     errors::app_error::AppError,
     repositories::{
+        email_verification_repository::EmailVerificationRepository,
+        password_reset_repository::PasswordResetRepository,
         refresh_token_repository::RefreshTokenRepository, role_repository::RoleRepository,
         session_repository::SessionRepository, user_repository::UserRepository,
     },
+};
+use crate::{
+    api::dto::{
+        login_request::LoginRequest, login_response::LoginResponse,
+        reset_password_request::ResetPasswordRequest,
+    },
+    auth::{jwt::JwtService, password::PasswordService, token_hash::TokenHashService},
+    config::app_config::AppConfig,
 };
 
 pub struct AuthService;
@@ -245,6 +252,144 @@ impl AuthService {
             .map_err(|_| AppError::InternalServerError)?;
 
         RefreshTokenRepository::revoke_by_session(pool, session_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        Ok(())
+    }
+    pub async fn forgot_password(
+        pool: &PgPool,
+        request: ForgotPasswordRequest,
+    ) -> Result<(), AppError> {
+        let user = UserRepository::find_by_email(pool, &request.email)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        if let Some(user) = user {
+            let reset_token = uuid::Uuid::new_v4().to_string();
+
+            let token_hash = TokenHashService::hash(&reset_token);
+
+            PasswordResetRepository::create(pool, user.id, token_hash)
+                .await
+                .map_err(|_| AppError::InternalServerError)?;
+
+            println!("Password Reset Token: {}", reset_token);
+        }
+
+        Ok(())
+    }
+    pub async fn reset_password(
+        pool: &PgPool,
+        request: ResetPasswordRequest,
+    ) -> Result<(), AppError> {
+        let token_hash = TokenHashService::hash(&request.token);
+
+        let reset_token = PasswordResetRepository::find_by_hash(pool, &token_hash)
+            .await
+            .map_err(|_| AppError::InternalServerError)?
+            .ok_or(AppError::InvalidResetToken)?;
+
+        if reset_token.used_at.is_some() {
+            return Err(AppError::ResetTokenAlreadyUsed);
+        }
+
+        if reset_token.expires_at < chrono::Utc::now().naive_utc() {
+            return Err(AppError::ResetTokenExpired);
+        }
+
+        let password_hash = PasswordService::hash_password(&request.new_password)
+            .map_err(|_| AppError::InternalServerError)?;
+
+        UserRepository::update_password(pool, reset_token.user_id, password_hash)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        PasswordResetRepository::mark_used(pool, reset_token.id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        RefreshTokenRepository::revoke_all_by_user(pool, reset_token.user_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        SessionRepository::deactivate_all_by_user(pool, reset_token.user_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        Ok(())
+    }
+    pub async fn send_verification(
+        pool: &PgPool,
+        request: SendVerificationRequest,
+    ) -> Result<(), AppError> {
+        println!("=== SEND VERIFICATION START ===");
+        println!("Email: {}", request.email);
+
+        let user = UserRepository::find_by_email(pool, &request.email)
+            .await
+            .map_err(|e| {
+                println!("Database Error: {:?}", e);
+                AppError::InternalServerError
+            })?;
+
+        println!("User Found: {:?}", user);
+
+        if let Some(user) = user {
+            println!("User ID: {}", user.id);
+            println!("Is Verified: {}", user.is_verified);
+
+            if user.is_verified {
+                println!("User already verified");
+                return Ok(());
+            }
+
+            let token = uuid::Uuid::new_v4().to_string();
+
+            println!("Generated Token: {}", token);
+
+            let token_hash = TokenHashService::hash(&token);
+
+            println!("Generated Hash: {}", token_hash);
+
+            EmailVerificationRepository::create(pool, user.id, token_hash)
+                .await
+                .map_err(|e| {
+                    println!("Create Verification Error: {:?}", e);
+                    AppError::InternalServerError
+                })?;
+
+            println!("Email Verification Token: {}", token);
+            println!("Verification record created successfully");
+        } else {
+            println!("User not found");
+        }
+
+        println!("=== SEND VERIFICATION END ===");
+
+        Ok(())
+    }
+    pub async fn verify_email(pool: &PgPool, request: VerifyEmailRequest) -> Result<(), AppError> {
+        let token_hash = TokenHashService::hash(&request.token);
+
+        let verification = EmailVerificationRepository::find_by_hash(pool, &token_hash)
+            .await
+            .map_err(|_| AppError::InternalServerError)?
+            .ok_or(AppError::InvalidVerificationToken)?;
+
+        if verification.verified_at.is_some() {
+            return Err(AppError::EmailAlreadyVerified);
+        }
+
+        if verification.expires_at < chrono::Utc::now().naive_utc() {
+            return Err(AppError::VerificationTokenExpired);
+        }
+
+        UserRepository::verify_email(pool, verification.user_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        EmailVerificationRepository::mark_verified(pool, verification.id)
             .await
             .map_err(|_| AppError::InternalServerError)?;
 

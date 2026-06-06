@@ -1,3 +1,4 @@
+pub mod forgot_password_request;
 pub mod login_request;
 pub mod login_response;
 pub mod logout_all_request;
@@ -7,5 +8,8 @@ pub mod refresh_token_request;
 pub mod refresh_token_response;
 pub mod register_request;
 pub mod register_response;
+pub mod reset_password_request;
+pub mod send_verification_request;
 pub mod session_response;
 pub mod user_request;
+pub mod verify_email_request;

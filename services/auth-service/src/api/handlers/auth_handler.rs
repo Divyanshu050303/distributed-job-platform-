@@ -1,11 +1,14 @@
 use crate::api::response::api_response::ApiResponse;
 use crate::{
     api::dto::{
-        login_request::LoginRequest, login_response::LoginResponse,
-        logout_all_request::LogoutAllRequest, logout_request::LogoutRequest,
-        profile_response::ProfileResponse, refresh_token_request::RefreshTokenRequest,
-        refresh_token_response::RefreshTokenResponse, register_request::RegisterRequest,
-        register_response::RegisterResponse, session_response::SessionResponse,
+        forgot_password_request::ForgotPasswordRequest, login_request::LoginRequest,
+        login_response::LoginResponse, logout_all_request::LogoutAllRequest,
+        logout_request::LogoutRequest, profile_response::ProfileResponse,
+        refresh_token_request::RefreshTokenRequest, refresh_token_response::RefreshTokenResponse,
+        register_request::RegisterRequest, register_response::RegisterResponse,
+        reset_password_request::ResetPasswordRequest,
+        send_verification_request::SendVerificationRequest, session_response::SessionResponse,
+        verify_email_request::VerifyEmailRequest,
     },
     app_state::AppState,
     application::auth_service::AuthService,
@@ -209,4 +212,88 @@ pub async fn revoke_session(
     AuthService::revoke_session(&state.db, current_user.user_id, session_id).await?;
 
     Ok(Json(ApiResponse::empty("Session revoked successfully")))
+}
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/forgot-password",
+    tag = "Authentication",
+    request_body = ForgotPasswordRequest,
+    responses(
+        (
+            status = 200,
+            description = "Password reset email sent"
+        )
+    )
+)]
+pub async fn forgot_password(
+    State(state): State<AppState>,
+    Json(request): Json<ForgotPasswordRequest>,
+) -> Result<Json<ApiResponse<()>>, AppError> {
+    AuthService::forgot_password(&state.db, request).await?;
+
+    Ok(Json(ApiResponse::empty(
+        "If the email exists, a password reset link has been sent.",
+    )))
+}
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/reset-password",
+    tag = "Authentication",
+    request_body = ResetPasswordRequest,
+    responses(
+        (
+            status = 200,
+            description = "Password reset successful"
+        )
+    )
+)]
+pub async fn reset_password(
+    State(state): State<AppState>,
+    Json(request): Json<ResetPasswordRequest>,
+) -> Result<Json<ApiResponse<()>>, AppError> {
+    AuthService::reset_password(&state.db, request).await?;
+
+    Ok(Json(ApiResponse::empty("Password reset successful")))
+}
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/send-verification",
+    tag = "Authentication",
+    request_body = SendVerificationRequest,
+    responses(
+        (
+            status = 200,
+            description = "Verification email sent"
+        )
+    )
+)]
+pub async fn send_verification(
+    State(state): State<AppState>,
+    Json(request): Json<SendVerificationRequest>,
+) -> Result<Json<ApiResponse<()>>, AppError> {
+    AuthService::send_verification(&state.db, request).await?;
+
+    Ok(Json(ApiResponse::empty(
+        "If the email exists, a verification email has been sent.",
+    )))
+}
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/verify-email",
+    tag = "Authentication",
+    request_body = VerifyEmailRequest,
+    responses(
+        (
+            status = 200,
+            description = "Email verified successfully"
+        )
+    )
+)]
+pub async fn verify_email(
+    State(state): State<AppState>,
+    Json(request): Json<VerifyEmailRequest>,
+) -> Result<Json<ApiResponse<()>>, AppError> {
+    AuthService::verify_email(&state.db, request).await?;
+
+    Ok(Json(ApiResponse::empty("Email verified successfully")))
 }

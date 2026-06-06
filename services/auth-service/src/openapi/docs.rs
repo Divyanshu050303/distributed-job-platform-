@@ -12,6 +12,10 @@ use utoipa::{Modify, OpenApi};
          crate::api::handlers::auth_handler::profile,
          crate::api::handlers::auth_handler::sessions,
          crate::api::handlers::auth_handler::revoke_session,
+         crate::api::handlers::auth_handler::forgot_password,
+         crate::api::handlers::auth_handler::reset_password,
+         crate::api::handlers::auth_handler::send_verification,
+         crate::api::handlers::auth_handler::verify_email,
     ),
     components(
         schemas(
@@ -27,6 +31,10 @@ use utoipa::{Modify, OpenApi};
             crate::api::dto::logout_all_request::LogoutAllRequest,
             crate::api::dto::profile_response::ProfileResponse,
             crate::api::dto::session_response::SessionResponse,
+            crate::api::dto::forgot_password_request::ForgotPasswordRequest,
+            crate::api::dto::reset_password_request::ResetPasswordRequest,
+            crate::api::dto::send_verification_request::SendVerificationRequest,
+            crate::api::dto::verify_email_request::VerifyEmailRequest,
         )
     ),
     tags(

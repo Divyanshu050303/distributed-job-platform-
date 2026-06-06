@@ -21,6 +21,12 @@ pub enum AppError {
     RefreshTokenExpired,
     UserNotFound,
     SessionNotFound,
+    InvalidResetToken,
+    ResetTokenExpired,
+    ResetTokenAlreadyUsed,
+    InvalidVerificationToken,
+    VerificationTokenExpired,
+    EmailAlreadyVerified,
 }
 
 #[derive(Serialize)]
@@ -104,6 +110,54 @@ impl IntoResponse for AppError {
                 StatusCode::NOT_FOUND,
                 Json(ErrorResponse {
                     message: "Session not found".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::InvalidResetToken => (
+                StatusCode::UNAUTHORIZED,
+                Json(ErrorResponse {
+                    message: "Invalid reset token".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::ResetTokenExpired => (
+                StatusCode::GONE,
+                Json(ErrorResponse {
+                    message: "Reset token expired".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::ResetTokenAlreadyUsed => (
+                StatusCode::GONE,
+                Json(ErrorResponse {
+                    message: "Reset token already used".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::InvalidVerificationToken => (
+                StatusCode::UNAUTHORIZED,
+                Json(ErrorResponse {
+                    message: "Invalid verification token".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::VerificationTokenExpired => (
+                StatusCode::GONE,
+                Json(ErrorResponse {
+                    message: "Verification token expired".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::EmailAlreadyVerified => (
+                StatusCode::CONFLICT,
+                Json(ErrorResponse {
+                    message: "Email already verified".into(),
                     success: false,
                 }),
             )

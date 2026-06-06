@@ -5,7 +5,8 @@ use axum::{
 
 use crate::{
     api::handlers::auth_handler::{
-        login, logout, logout_all, profile, refresh_token, register, revoke_session, sessions,
+        forgot_password, login, logout, logout_all, profile, refresh_token, register,
+        reset_password, revoke_session, send_verification, sessions, verify_email,
     },
     app_state::AppState,
     middleware::auth_middleware::auth_middleware,
@@ -15,7 +16,11 @@ pub fn routes(state: AppState) -> Router<AppState> {
     let public_routes = Router::new()
         .route("/api/v1/auth/register", post(register))
         .route("/api/v1/auth/login", post(login))
-        .route("/api/v1/auth/refresh-token", post(refresh_token));
+        .route("/api/v1/auth/refresh-token", post(refresh_token))
+        .route("/api/v1/auth/reset-password", post(reset_password))
+        .route("/api/v1/auth/forgot-password", post(forgot_password))
+        .route("/api/v1/auth/send-verification", post(send_verification))
+        .route("/api/v1/auth/verify-email", post(verify_email));
 
     let protected_routes = Router::new()
         .route("/api/v1/auth/logout", post(logout))

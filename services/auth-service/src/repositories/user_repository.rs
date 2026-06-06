@@ -60,4 +60,37 @@ impl UserRepository {
         .fetch_optional(pool)
         .await
     }
+    pub async fn update_password(
+        pool: &PgPool,
+        user_id: Uuid,
+        password_hash: String,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+        UPDATE users
+        SET password_hash = $1
+        WHERE id = $2
+        "#,
+        )
+        .bind(password_hash)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+    pub async fn verify_email(pool: &PgPool, user_id: Uuid) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+        UPDATE users
+        SET is_verified = true
+        WHERE id = $1
+        "#,
+        )
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }
