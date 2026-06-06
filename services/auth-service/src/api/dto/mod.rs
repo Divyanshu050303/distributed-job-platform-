@@ -1,5 +1,10 @@
 pub mod login_request;
 pub mod login_response;
+pub mod logout_all_request;
+pub mod logout_request;
+pub mod profile_response;
+pub mod refresh_token_request;
+pub mod refresh_token_response;
 pub mod register_request;
 pub mod register_response;
 pub mod user_request;

@@ -1,4 +1,5 @@
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::{api::dto::user_request::CreateUserParams, domain::user::User};
 
@@ -45,6 +46,18 @@ impl UserRepository {
         .bind(params.last_name)
         .bind(params.role_id)
         .fetch_one(pool)
+        .await
+    }
+    pub async fn find_by_id(pool: &PgPool, user_id: Uuid) -> Result<Option<User>, sqlx::Error> {
+        sqlx::query_as::<_, User>(
+            r#"
+        SELECT *
+        FROM users
+        WHERE id = $1
+        "#,
+        )
+        .bind(user_id)
+        .fetch_optional(pool)
         .await
     }
 }

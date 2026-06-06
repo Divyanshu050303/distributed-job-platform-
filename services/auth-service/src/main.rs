@@ -6,6 +6,7 @@ mod config;
 mod domain;
 mod errors;
 mod infrastructure;
+mod middleware;
 mod openapi;
 mod repositories;
 
@@ -16,7 +17,7 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
-    api::routes::{auth_routes::auth_routes, health_routes::health_routes},
+    api::routes::{auth_routes, health_routes::health_routes},
     app_state::AppState,
     config::app_config::AppConfig,
     infrastructure::postgres::connection::create_pool,
@@ -33,11 +34,14 @@ async fn main() {
         .await
         .expect("Failed to connect database");
 
-    let state = AppState { db: db_pool };
+    let state = AppState {
+        db: db_pool,
+        config: config.clone(),
+    };
 
     let app = Router::new()
         .merge(health_routes())
-        .merge(auth_routes())
+        .merge(auth_routes::routes(state.clone()))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .with_state(state);
 

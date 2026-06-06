@@ -17,11 +17,15 @@ pub enum AppError {
     InvalidCredentials,
 
     Unauthorized,
+    InvalidRefreshToken,
+    RefreshTokenExpired,
+    UserNotFound,
 }
 
 #[derive(Serialize)]
 struct ErrorResponse {
     message: String,
+    success: bool,
 }
 
 impl IntoResponse for AppError {
@@ -31,6 +35,7 @@ impl IntoResponse for AppError {
                 StatusCode::CONFLICT,
                 Json(ErrorResponse {
                     message: "User already exists".into(),
+                    success: false,
                 }),
             )
                 .into_response(),
@@ -39,6 +44,7 @@ impl IntoResponse for AppError {
                 StatusCode::NOT_FOUND,
                 Json(ErrorResponse {
                     message: "Role not found".into(),
+                    success: false,
                 }),
             )
                 .into_response(),
@@ -47,6 +53,7 @@ impl IntoResponse for AppError {
                 StatusCode::UNAUTHORIZED,
                 Json(ErrorResponse {
                     message: "Invalid credentials".into(),
+                    success: false,
                 }),
             )
                 .into_response(),
@@ -55,6 +62,7 @@ impl IntoResponse for AppError {
                 StatusCode::UNAUTHORIZED,
                 Json(ErrorResponse {
                     message: "Unauthorized".into(),
+                    success: false,
                 }),
             )
                 .into_response(),
@@ -63,6 +71,31 @@ impl IntoResponse for AppError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
                     message: "Internal server error".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::InvalidRefreshToken => (
+                StatusCode::UNAUTHORIZED,
+                Json(ErrorResponse {
+                    message: "Invalid refresh token".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::RefreshTokenExpired => (
+                StatusCode::GONE,
+                Json(ErrorResponse {
+                    message: "Refresh token expired".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::UserNotFound => (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse {
+                    message: "User not found".into(),
+                    success: false,
                 }),
             )
                 .into_response(),

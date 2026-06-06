@@ -5,7 +5,7 @@ use jsonwebtoken::{EncodingKey, Header, encode};
 use uuid::Uuid;
 
 use crate::{auth::claims::Claims, config::app_config::AppConfig, errors::app_error::AppError};
-
+use jsonwebtoken::{DecodingKey, Validation, decode};
 pub struct JwtService;
 
 impl JwtService {
@@ -39,5 +39,15 @@ impl JwtService {
             &EncodingKey::from_secret(config.jwt_secret.as_bytes()),
         )
         .map_err(|_| AppError::InternalServerError)
+    }
+    pub fn validate_access_token(token: &str, config: &AppConfig) -> Result<Claims, AppError> {
+        let decoded = decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(config.jwt_secret.as_bytes()),
+            &Validation::default(),
+        )
+        .map_err(|_| AppError::Unauthorized)?;
+
+        Ok(decoded.claims)
     }
 }
