@@ -1,5 +1,3 @@
-use axum::{Json, extract::State};
-
 use crate::api::response::api_response::ApiResponse;
 use crate::{
     api::dto::{
@@ -7,13 +5,16 @@ use crate::{
         logout_all_request::LogoutAllRequest, logout_request::LogoutRequest,
         profile_response::ProfileResponse, refresh_token_request::RefreshTokenRequest,
         refresh_token_response::RefreshTokenResponse, register_request::RegisterRequest,
-        register_response::RegisterResponse,
+        register_response::RegisterResponse, session_response::SessionResponse,
     },
     app_state::AppState,
     application::auth_service::AuthService,
     auth::current_user::CurrentUser,
     errors::app_error::AppError,
 };
+use axum::extract::Path;
+use axum::{Json, extract::State};
+use uuid::Uuid;
 
 #[utoipa::path(
     post,
@@ -156,4 +157,56 @@ pub async fn profile(
             role: current_user.role,
         },
     )))
+}
+#[utoipa::path(
+    get,
+    path = "/api/v1/auth/sessions",
+    tag = "Authentication",
+    security(
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Sessions fetched successfully",
+            body = Vec<SessionResponse>
+        )
+    )
+)]
+pub async fn sessions(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+) -> Result<Json<ApiResponse<Vec<SessionResponse>>>, AppError> {
+    let sessions = AuthService::get_sessions(&state.db, current_user.user_id).await?;
+
+    Ok(Json(ApiResponse::success(
+        "Sessions fetched successfully",
+        sessions,
+    )))
+}
+#[utoipa::path(
+    delete,
+    path = "/api/v1/auth/sessions/{session_id}",
+    tag = "Authentication",
+    security(
+        ("bearer_auth" = [])
+    ),
+    params(
+        ("session_id" = Uuid, Path, description = "Session ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Session revoked successfully"
+        )
+    )
+)]
+pub async fn revoke_session(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path(session_id): Path<Uuid>,
+) -> Result<Json<ApiResponse<()>>, AppError> {
+    AuthService::revoke_session(&state.db, current_user.user_id, session_id).await?;
+
+    Ok(Json(ApiResponse::empty("Session revoked successfully")))
 }

@@ -1,10 +1,12 @@
 use axum::{
     Router, middleware,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 
 use crate::{
-    api::handlers::auth_handler::{login, logout, logout_all, profile, refresh_token, register},
+    api::handlers::auth_handler::{
+        login, logout, logout_all, profile, refresh_token, register, revoke_session, sessions,
+    },
     app_state::AppState,
     middleware::auth_middleware::auth_middleware,
 };
@@ -19,6 +21,8 @@ pub fn routes(state: AppState) -> Router<AppState> {
         .route("/api/v1/auth/logout", post(logout))
         .route("/api/v1/auth/logout-all", post(logout_all))
         .route("/api/v1/auth/profile", get(profile))
+        .route("/api/v1/auth/sessions", get(sessions))
+        .route("/api/v1/auth/sessions/{session_id}", delete(revoke_session))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

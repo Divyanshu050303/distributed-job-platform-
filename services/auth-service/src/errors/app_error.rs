@@ -20,6 +20,7 @@ pub enum AppError {
     InvalidRefreshToken,
     RefreshTokenExpired,
     UserNotFound,
+    SessionNotFound,
 }
 
 #[derive(Serialize)]
@@ -95,6 +96,14 @@ impl IntoResponse for AppError {
                 StatusCode::NOT_FOUND,
                 Json(ErrorResponse {
                     message: "User not found".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::SessionNotFound => (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse {
+                    message: "Session not found".into(),
                     success: false,
                 }),
             )

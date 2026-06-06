@@ -88,4 +88,20 @@ impl RefreshTokenRepository {
 
         Ok(())
     }
+    pub async fn revoke_by_session(pool: &PgPool, session_id: Uuid) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+        UPDATE refresh_tokens
+        SET
+            revoked = true,
+            revoked_at = NOW()
+        WHERE session_id = $1
+        "#,
+        )
+        .bind(session_id)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }

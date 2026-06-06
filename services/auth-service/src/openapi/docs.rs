@@ -10,6 +10,8 @@ use utoipa::{Modify, OpenApi};
          crate::api::handlers::auth_handler::logout,
          crate::api::handlers::auth_handler::logout_all,
          crate::api::handlers::auth_handler::profile,
+         crate::api::handlers::auth_handler::sessions,
+         crate::api::handlers::auth_handler::revoke_session,
     ),
     components(
         schemas(
@@ -23,7 +25,8 @@ use utoipa::{Modify, OpenApi};
             crate::api::dto::refresh_token_response::RefreshTokenResponse,
             crate::api::dto::logout_request::LogoutRequest,
             crate::api::dto::logout_all_request::LogoutAllRequest,
-            crate::api::dto::profile_response::ProfileResponse
+            crate::api::dto::profile_response::ProfileResponse,
+            crate::api::dto::session_response::SessionResponse,
         )
     ),
     tags(

@@ -58,4 +58,50 @@ impl SessionRepository {
 
         Ok(())
     }
+    pub async fn find_by_user_id(
+        pool: &PgPool,
+        user_id: Uuid,
+    ) -> Result<Vec<Session>, sqlx::Error> {
+        sqlx::query_as::<_, Session>(
+            r#"
+        SELECT *
+        FROM sessions
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        "#,
+        )
+        .bind(user_id)
+        .fetch_all(pool)
+        .await
+    }
+    pub async fn find_by_id(
+        pool: &PgPool,
+        session_id: Uuid,
+    ) -> Result<Option<Session>, sqlx::Error> {
+        sqlx::query_as::<_, Session>(
+            r#"
+        SELECT *
+        FROM sessions
+        WHERE id = $1
+        "#,
+        )
+        .bind(session_id)
+        .fetch_optional(pool)
+        .await
+    }
+    pub async fn deactivate(pool: &PgPool, session_id: Uuid) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+        UPDATE sessions
+        SET
+            is_active = false
+        WHERE id = $1
+        "#,
+        )
+        .bind(session_id)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
 }

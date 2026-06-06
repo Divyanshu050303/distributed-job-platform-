@@ -7,4 +7,5 @@ pub mod refresh_token_request;
 pub mod refresh_token_response;
 pub mod register_request;
 pub mod register_response;
+pub mod session_response;
 pub mod user_request;

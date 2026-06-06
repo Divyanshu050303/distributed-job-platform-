@@ -1,4 +1,5 @@
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::{
     api::dto::{login_request::LoginRequest, login_response::LoginResponse},
@@ -10,7 +11,7 @@ use crate::{
         logout_all_request::LogoutAllRequest, logout_request::LogoutRequest,
         refresh_token_request::RefreshTokenRequest, refresh_token_response::RefreshTokenResponse,
         register_request::RegisterRequest, register_response::RegisterResponse,
-        user_request::CreateUserParams,
+        session_response::SessionResponse, user_request::CreateUserParams,
     },
     errors::app_error::AppError,
     repositories::{
@@ -193,6 +194,57 @@ impl AuthService {
             .map_err(|_| AppError::InternalServerError)?;
 
         SessionRepository::deactivate_all_by_user(pool, request.user_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        Ok(())
+    }
+    pub async fn get_sessions(
+        pool: &PgPool,
+        user_id: Uuid,
+    ) -> Result<Vec<SessionResponse>, AppError> {
+        let sessions = SessionRepository::find_by_user_id(pool, user_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        Ok(sessions
+            .into_iter()
+            .map(|session| SessionResponse {
+                session_id: session.id,
+
+                device_name: session.device_name,
+
+                user_agent: session.user_agent,
+
+                ip_address: session.ip_address,
+
+                is_active: session.is_active,
+
+                last_activity_at: session.last_activity_at,
+
+                created_at: session.created_at,
+            })
+            .collect())
+    }
+    pub async fn revoke_session(
+        pool: &PgPool,
+        current_user_id: Uuid,
+        session_id: Uuid,
+    ) -> Result<(), AppError> {
+        let session = SessionRepository::find_by_id(pool, session_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?
+            .ok_or(AppError::SessionNotFound)?;
+
+        if session.user_id != current_user_id {
+            return Err(AppError::Unauthorized);
+        }
+
+        SessionRepository::deactivate(pool, session_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        RefreshTokenRepository::revoke_by_session(pool, session_id)
             .await
             .map_err(|_| AppError::InternalServerError)?;
 
