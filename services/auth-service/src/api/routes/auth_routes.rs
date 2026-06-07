@@ -5,8 +5,8 @@ use axum::{
 
 use crate::{
     api::handlers::auth_handler::{
-        forgot_password, login, logout, logout_all, profile, refresh_token, register,
-        reset_password, revoke_session, send_verification, sessions, verify_email,
+        admin_dashboard, forgot_password, login, logout, logout_all, profile, refresh_token,
+        register, reset_password, revoke_session, send_verification, sessions, verify_email,
     },
     app_state::AppState,
     middleware::auth_middleware::auth_middleware,
@@ -28,6 +28,7 @@ pub fn routes(state: AppState) -> Router<AppState> {
         .route("/api/v1/auth/profile", get(profile))
         .route("/api/v1/auth/sessions", get(sessions))
         .route("/api/v1/auth/sessions/{session_id}", delete(revoke_session))
+        .route("/api/v1/admin/dashboard", get(admin_dashboard))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

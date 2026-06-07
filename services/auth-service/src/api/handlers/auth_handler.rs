@@ -13,6 +13,8 @@ use crate::{
     app_state::AppState,
     application::auth_service::AuthService,
     auth::current_user::CurrentUser,
+    auth::role_guard::require_role,
+    auth::roles::Role,
     errors::app_error::AppError,
 };
 use axum::extract::Path;
@@ -296,4 +298,22 @@ pub async fn verify_email(
     AuthService::verify_email(&state.db, request).await?;
 
     Ok(Json(ApiResponse::empty("Email verified successfully")))
+}
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/dashboard",
+    tag = "Admin",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn admin_dashboard(
+    current_user: CurrentUser,
+) -> Result<Json<ApiResponse<String>>, AppError> {
+    require_role(&current_user, &[Role::Admin])?;
+
+    Ok(Json(ApiResponse::success(
+        "Dashboard fetched",
+        "Welcome Admin".to_string(),
+    )))
 }

@@ -27,6 +27,7 @@ pub enum AppError {
     InvalidVerificationToken,
     VerificationTokenExpired,
     EmailAlreadyVerified,
+    Forbidden,
 }
 
 #[derive(Serialize)]
@@ -158,6 +159,14 @@ impl IntoResponse for AppError {
                 StatusCode::CONFLICT,
                 Json(ErrorResponse {
                     message: "Email already verified".into(),
+                    success: false,
+                }),
+            )
+                .into_response(),
+            AppError::Forbidden => (
+                StatusCode::FORBIDDEN,
+                Json(ErrorResponse {
+                    message: "Forbidden".into(),
                     success: false,
                 }),
             )
