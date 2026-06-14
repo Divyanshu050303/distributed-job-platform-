@@ -143,4 +143,13 @@ impl JobService {
 
         Ok(job.into())
     }
+    pub async fn delete_job(pool: &PgPool, id: Uuid) -> Result<bool, AppError> {
+        let deleted = JobRepository::soft_delete(pool, id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+        if !deleted {
+            return Err(AppError::JobNotFound);
+        }
+        Ok(deleted)
+    }
 }

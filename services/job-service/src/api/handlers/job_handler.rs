@@ -120,7 +120,8 @@ pub async fn get_jobs(
     responses(
         (status = 200, description = "Job updated successfully", body = JobResponse),
         (status = 404, description = "Job not found")
-    )
+    ),
+    security(("bearer_auth" = []))
 )]
 pub async fn update_job(
     State(state): State<AppState>,

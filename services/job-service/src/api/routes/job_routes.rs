@@ -1,10 +1,13 @@
 use axum::{
     Router, middleware,
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
 };
 
 use crate::{
-    api::handlers::job_handler::{create_job, get_job, get_jobs, update_job},
+    api::handlers::{
+        health_handler::delete_job,
+        job_handler::{create_job, get_job, get_jobs, update_job},
+    },
     app_state::AppState,
     middleware::auth_middleware::auth_middleware,
 };
@@ -17,6 +20,7 @@ pub fn routes(state: AppState) -> Router<AppState> {
     let protected_routes = Router::new()
         .route("/api/v1/jobs", post(create_job))
         .route("/api/v1/jobs/{id}", put(update_job))
+        .route("/api/v1/jobs/{id}", delete(delete_job))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

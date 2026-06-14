@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -18,5 +18,5 @@ pub struct UpdateJobRequest {
     pub salary_max: i64,
     pub currency: String,
     pub openings: i32,
-    pub expires_at: NaiveDateTime,
+    pub expires_at: Option<DateTime<Utc>>,
 }

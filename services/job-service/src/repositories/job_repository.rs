@@ -1,6 +1,5 @@
 use crate::api::dto::{job_query_params::JobQueryParams, update_job_request::UpdateJobRequest};
 use crate::domain::job::Job;
-use crate::enums::{employment_type::EmploymentType, work_mode::WorkMode};
 use sqlx::{PgPool, Postgres, QueryBuilder};
 use uuid::Uuid;
 
@@ -134,17 +133,17 @@ impl JobRepository {
         }
     }
 
-    pub async fn soft_delete(pool: &PgPool, id: Uuid) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            r#"
-        UPDATE jobs SET deleted_at =NOW() WHERE id = $1
-        "#,
-        )
-        .bind(id)
-        .execute(pool)
-        .await?;
-        Ok(())
-    }
+    // pub async fn soft_delete(pool: &PgPool, id: Uuid) -> Result<(), sqlx::Error> {
+    //     sqlx::query(
+    //         r#"
+    //     UPDATE jobs SET deleted_at =NOW() WHERE id = $1
+    //     "#,
+    //     )
+    //     .bind(id)
+    //     .execute(pool)
+    //     .await?;
+    //     Ok(())
+    // }
     pub async fn update(
         pool: &PgPool,
         id: Uuid,
@@ -189,5 +188,12 @@ impl JobRepository {
         .bind(job.expires_at)
         .fetch_optional(pool)
         .await
+    }
+    pub async fn soft_delete(pool: &PgPool, id: Uuid) -> Result<bool, sqlx::Error> {
+        let result =sqlx::query(
+            r#"UPDATE jobs set deleted_at = NOW() updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL"#
+        ).bind(id).execute(pool).await?;
+
+        Ok(result.rows_affected() > 0)
     }
 }
