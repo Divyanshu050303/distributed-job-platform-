@@ -85,6 +85,10 @@ impl AuthService {
 
         let valid = PasswordService::verify_password(&request.password, &user.password_hash)
             .map_err(|_| AppError::InternalServerError)?;
+        let role = RoleRepository::find_by_id(pool, user.role_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?
+            .ok_or(AppError::RoleNotFound)?;
 
         if !valid {
             return Err(AppError::InvalidCredentials);
@@ -96,7 +100,7 @@ impl AuthService {
         let access_token = JwtService::generate_access_token(
             user.id,
             user.email.clone(),
-            "User".to_string(),
+            role.name.clone(),
             config,
         )?;
 
@@ -144,13 +148,17 @@ impl AuthService {
             .await
             .map_err(|_| AppError::InternalServerError)?
             .ok_or(AppError::UserNotFound)?;
+        let role = RoleRepository::find_by_id(pool, user.role_id)
+            .await
+            .map_err(|_| AppError::InternalServerError)?
+            .ok_or(AppError::RoleNotFound)?;
 
         // 5. Generate new access token
 
         let access_token = JwtService::generate_access_token(
             user.id,
             user.email.clone(),
-            "User".to_string(),
+            role.name.clone(),
             config,
         )?;
 

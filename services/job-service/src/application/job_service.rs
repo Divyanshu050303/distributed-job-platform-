@@ -5,7 +5,8 @@ use uuid::Uuid;
 use crate::{
     api::dto::{
         create_job_request::CreateJobRequest, create_job_response::CreateJobResponse,
-        job_response::JobResponse,
+        job_list_response::JobListResponse, job_query_params::JobQueryParams,
+        job_response::JobResponse, update_job_request::UpdateJobRequest,
     },
     domain::job::Job,
     errors::app_error::AppError,
@@ -35,17 +36,28 @@ impl JobService {
             salary_max: request.salary_max,
             currency: request.currency,
             openings: request.openings,
-            status: "Draft".to_string(),
+            status: request.status,
             created_by,
             published_at: None,
-            expires_at: request.expires_at,
+            expires_at: request.expires_at.map(|dt| dt.naive_utc()),
             created_at: now,
             updated_at: now,
             deleted_at: None,
         };
-        let job = JobRepository::create(pool, &job)
-            .await
-            .map_err(|_| AppError::InternalServerError)?;
+        if request.experience_min > request.experience_max {
+            return Err(AppError::Validation(
+                "experience_min cannot be greater than experience_max".into(),
+            ));
+        }
+        if request.salary_min > request.salary_max {
+            return Err(AppError::Validation(
+                "salary_min cannot be greater than salary_max".into(),
+            ));
+        }
+        let job = JobRepository::create(pool, &job).await.map_err(|e| {
+            println!("Create Job Error: {:?}", e);
+            AppError::InternalServerError
+        })?;
         Ok(CreateJobResponse {
             id: job.id,
             title: job.title,
@@ -59,6 +71,7 @@ impl JobService {
             .await
             .map_err(|_| AppError::InternalServerError)?
             .ok_or(AppError::NotFound)?;
+        println!("Job: {:?}", job);
         Ok(JobResponse {
             id: job.id,
             title: job.title,
@@ -80,5 +93,54 @@ impl JobService {
             created_at: job.created_at,
             updated_at: job.updated_at,
         })
+    }
+    pub async fn get_Jobs(
+        pool: &PgPool,
+        params: JobQueryParams,
+    ) -> Result<JobListResponse, AppError> {
+        let page = params.page.unwrap_or(1);
+        let limit = params.limit.unwrap_or(10);
+        let total = JobRepository::count_all(pool, &params)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+        let jobs = JobRepository::find_all(pool, &params)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+        let total_pages = if total == 0 {
+            0
+        } else {
+            (total as f64 / limit as f64).ceil() as i64
+        };
+        Ok(JobListResponse {
+            items: jobs.into_iter().map(JobResponse::from).collect(),
+            page,
+            limit,
+            total_pages,
+            total,
+        })
+    }
+    pub async fn update_job(
+        pool: &PgPool,
+        id: Uuid,
+        request: UpdateJobRequest,
+    ) -> Result<JobResponse, AppError> {
+        if request.experience_min > request.experience_max {
+            return Err(AppError::Validation(
+                "experience_min cannot be greater than experience_max".into(),
+            ));
+        }
+
+        if request.salary_min > request.salary_max {
+            return Err(AppError::Validation(
+                "salary_min cannot be greater than salary_max".into(),
+            ));
+        }
+
+        let job = JobRepository::update(pool, id, &request)
+            .await
+            .map_err(|_| AppError::InternalServerError)?
+            .ok_or(AppError::JobNotFound)?;
+
+        Ok(job.into())
     }
 }

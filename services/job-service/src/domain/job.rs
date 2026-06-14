@@ -1,5 +1,9 @@
 use chrono::NaiveDateTime;
 use sqlx::FromRow;
+
+use crate::enums::employment_type::EmploymentType;
+use crate::enums::job_status::JobStatus;
+use crate::enums::work_mode::WorkMode;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, FromRow)]
@@ -11,8 +15,8 @@ pub struct Job {
 
     pub company_name: String,
 
-    pub employment_type: String,
-    pub work_mode: String,
+    pub employment_type: EmploymentType,
+    pub work_mode: WorkMode,
 
     pub location: String,
 
@@ -25,7 +29,7 @@ pub struct Job {
 
     pub openings: i32,
 
-    pub status: String,
+    pub status: JobStatus,
 
     pub created_by: Uuid,
 

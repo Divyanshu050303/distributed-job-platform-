@@ -20,6 +20,8 @@ pub enum AppError {
     Validation(String),
 
     InternalServerError,
+
+    JobNotFound,
 }
 
 #[derive(Serialize)]
@@ -47,6 +49,8 @@ impl IntoResponse for AppError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error".to_string(),
             ),
+
+            AppError::JobNotFound => (StatusCode::NOT_FOUND, "Job not found".to_string()),
         };
 
         (

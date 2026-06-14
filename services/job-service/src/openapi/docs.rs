@@ -7,6 +7,7 @@ use utoipa::{Modify, OpenApi};
         crate::api::handlers::health_handler::health_check,
         crate::api::handlers::job_handler::create_job,
         crate::api::handlers::job_handler::get_job,
+        crate::api::handlers::job_handler::get_jobs,
     ),
     components(
         schemas(
@@ -15,6 +16,7 @@ use utoipa::{Modify, OpenApi};
             crate::api::dto::create_job_request::CreateJobRequest,
             crate::api::dto::create_job_response::CreateJobResponse,
             crate::api::dto::job_response::JobResponse,
+            crate::api::dto::job_list_response::JobListResponse,
         )
     ),
     tags(

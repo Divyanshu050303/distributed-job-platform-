@@ -4,6 +4,7 @@ mod application;
 mod auth;
 mod config;
 mod domain;
+mod enums;
 mod errors;
 mod infrastructure;
 mod middleware;

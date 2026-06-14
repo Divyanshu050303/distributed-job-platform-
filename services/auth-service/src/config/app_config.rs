@@ -30,7 +30,7 @@ impl AppConfig {
                 .parse()
                 .expect("Invalid SERVER_PORT"),
 
-            database_url: env::var("DATABASE_URL").expect("DATABASE_URL missing"),
+            database_url: env::var("DATABASE_URL_AUTH_SERVICE").expect("DATABASE_URL missing"),
             jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET missing"),
 
             jwt_issuer: env::var("JWT_ISSUER").expect("JWT_ISSUER missing"),
